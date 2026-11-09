@@ -14,6 +14,14 @@ const mode = process.argv[2] || "pending";
 if (mode !== "pending" && mode !== "batch") {
   throw new Error("Expected mode: pending or batch");
 }
+const canCollect = typeof globalThis.gc === "function";
+if (!canCollect) {
+  console.log("GC is unavailable; heap readings include uncollected garbage. Run in local Node for the OOM check.");
+}
+const heapMiB = () => {
+  const bytes = process.memoryUsage?.().heapUsed;
+  return typeof bytes === "number" ? `${(bytes / 2 ** 20).toFixed(1)} MiB` : "heap unavailable";
+};
 const [key, setKey] = createSignal(0);
 const [state, setState] = createStore({
   data: [
@@ -73,13 +81,13 @@ for (let step = 1; step <= 30000; step++) {
   else void startTransition(update);
   await new Promise(resolve => setImmediate(resolve));
   if (step % 1000 === 0) {
-    global.gc();
-    console.log(step, (process.memoryUsage().heapUsed / 2 ** 20).toFixed(1), "MiB");
+    if (canCollect) globalThis.gc();
+    console.log(step, heapMiB());
   }
 }
 
 resolveResource("done");
 await pending;
-global.gc();
-console.log("after resolution", (process.memoryUsage().heapUsed / 2 ** 20).toFixed(1), "MiB");
+if (canCollect) globalThis.gc();
+console.log("after resolution", heapMiB());
 dispose();

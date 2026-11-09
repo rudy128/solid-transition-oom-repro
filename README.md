@@ -19,6 +19,8 @@ npm run control
 
 The control keeps the same resource pending and performs the same updates through `batch` instead of `startTransition`. It completes 30,000 updates with roughly 23 MiB of retained heap on the tested machine. The exact OOM point depends on the Node build and memory limit.
 
+StackBlitz WebContainers may not expose `global.gc`, even when the npm script passes `--expose-gc`. The script still runs there, but its heap readings then include uncollected garbage, and the 96 MiB V8 heap limit may not apply. Use local Node 24 to check the OOM result and compare retained memory with the control.
+
 ## What this shows
 
 During the pending transition, `Transition.sources` accumulates signals from rows that have left the two-row list. In a source build, it held about 20,000 entries after 5,000 updates. Memory returned near baseline once the resource resolved in an unconstrained run. This is retention for the lifetime of a pending transition, rather than a leak after that transition completes.
