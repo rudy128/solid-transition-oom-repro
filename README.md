@@ -19,7 +19,7 @@ npm run control
 
 The control keeps the same resource pending and performs the same updates through `batch` instead of `startTransition`. It completes 30,000 updates with roughly 23 MiB of retained heap on the tested machine. The exact OOM point depends on the Node build and memory limit.
 
-StackBlitz WebContainers may not expose `global.gc`, even when the npm script passes `--expose-gc`. The script still runs there, but its heap readings then include uncollected garbage, and the 96 MiB V8 heap limit may not apply. Use local Node 24 to check the OOM result and compare retained memory with the control.
+The reported StackBlitz WebContainer run did not expose `global.gc` and returned `0` for `process.memoryUsage().heapUsed`. Its `0.0 MiB` output was a placeholder, not a measurement. The script now stops immediately in that runtime. Clone this repository and run it in a local Node 24 terminal for a valid OOM check.
 
 ## What this shows
 

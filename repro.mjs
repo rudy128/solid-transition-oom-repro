@@ -1,5 +1,19 @@
 import { JSDOM } from "jsdom";
 
+const heapBytes = () => process.memoryUsage?.().heapUsed;
+if (typeof globalThis.gc !== "function" || !(heapBytes() > 0)) {
+  console.error(
+    "Unsupported runtime: this OOM test needs local Node with exposed GC and working heap reporting. " +
+      "StackBlitz WebContainers do not provide them. Run npm ci && npm run repro in a local terminal."
+  );
+  process.exit(2);
+}
+const heapMiB = () => {
+  const bytes = heapBytes();
+  if (!(bytes > 0)) throw new Error("Heap reporting stopped working in this runtime");
+  return `${(bytes / 2 ** 20).toFixed(1)} MiB`;
+};
+
 const dom = new JSDOM("<div id='root'></div>");
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
@@ -14,14 +28,6 @@ const mode = process.argv[2] || "pending";
 if (mode !== "pending" && mode !== "batch") {
   throw new Error("Expected mode: pending or batch");
 }
-const canCollect = typeof globalThis.gc === "function";
-if (!canCollect) {
-  console.log("GC is unavailable; heap readings include uncollected garbage. Run in local Node for the OOM check.");
-}
-const heapMiB = () => {
-  const bytes = process.memoryUsage?.().heapUsed;
-  return typeof bytes === "number" ? `${(bytes / 2 ** 20).toFixed(1)} MiB` : "heap unavailable";
-};
 const [key, setKey] = createSignal(0);
 const [state, setState] = createStore({
   data: [
@@ -81,13 +87,13 @@ for (let step = 1; step <= 30000; step++) {
   else void startTransition(update);
   await new Promise(resolve => setImmediate(resolve));
   if (step % 1000 === 0) {
-    if (canCollect) globalThis.gc();
+    globalThis.gc();
     console.log(step, heapMiB());
   }
 }
 
 resolveResource("done");
 await pending;
-if (canCollect) globalThis.gc();
+globalThis.gc();
 console.log("after resolution", heapMiB());
 dispose();

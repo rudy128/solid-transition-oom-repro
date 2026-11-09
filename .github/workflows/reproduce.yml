@@ -1,0 +1,35 @@
+name: Reproduce OOM
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Control completes
+        run: npm run control
+      - name: Pending transition reaches OOM
+        shell: bash
+        run: |
+          ulimit -c 0
+          set +e
+          npm run repro > repro.log 2>&1
+          result=$?
+          set -e
+          cat repro.log
+          if [ "$result" -eq 0 ]; then
+            echo "Expected an OOM, but the run completed"
+            exit 1
+          fi
+          if ! grep -q "JavaScript heap out of memory" repro.log; then
+            echo "Run failed for a reason other than the expected OOM"
+            exit 1
+          fi
