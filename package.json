@@ -1,0 +1,17 @@
+{
+  "name": "solid-transition-oom-repro",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "repro": "node --max-old-space-size=96 --expose-gc --conditions=browser repro.mjs pending",
+    "control": "node --max-old-space-size=96 --expose-gc --conditions=browser repro.mjs batch"
+  },
+  "dependencies": {
+    "jsdom": "25.0.1",
+    "solid-js": "1.9.18"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
